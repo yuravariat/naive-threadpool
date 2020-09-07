@@ -16,7 +16,6 @@ int main()
 		};
 
 		auto task = Task::Run(func);
-		pool.QuqueTask(task);
 	}
 
 	std::cout << "Hello World! main thread " << std::this_thread::get_id() << std::endl;

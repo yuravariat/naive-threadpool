@@ -1,5 +1,11 @@
 #pragma once
 #include "pch.h"
+namespace CustomThreading
+{
+	class Task;
+	class ApplicationThreadPool;
+}
+#include "ThreadPool.h"
 
 namespace CustomThreading
 {
@@ -27,7 +33,7 @@ namespace CustomThreading
 		template<class LambdaFunc, class ReturnType = std::result_of_t<LambdaFunc& ()>>
 		static std::shared_ptr<Task> Run(LambdaFunc&& func) {
 			auto task = std::make_shared<Task>(func);
-			//ApplicationThreadPool::GetInstance().QuqueTask(task);
+			ApplicationThreadPool::GetInstance()->QuqueTask(task);
 			return task;
 		}
 		~Task();

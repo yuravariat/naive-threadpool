@@ -21,5 +21,28 @@ namespace CustomThreading
 		std::deque<std::shared_ptr<Task>> workItems;
 		void ThreadLoop();
 	};
+
+	class ApplicationThreadPool
+	{
+	public:
+		static ApplicationThreadPool* GetInstance() {
+			static ApplicationThreadPool* instance = new ApplicationThreadPool();
+			return instance;
+		}
+		bool QuqueTask(std::shared_ptr<Task>& task) {
+			return m_ThreadPool->QuqueTask(task);
+		}
+	private:
+		ApplicationThreadPool() : m_ThreadPool(nullptr) { m_ThreadPool = new ThreadPool(); };
+		~ApplicationThreadPool() {
+			if (m_ThreadPool != nullptr) {
+				delete m_ThreadPool;
+				m_ThreadPool = nullptr;
+			}
+		}
+		ThreadPool* m_ThreadPool;
+		ApplicationThreadPool(const ApplicationThreadPool&) = delete;
+		ApplicationThreadPool& operator=(const ApplicationThreadPool&) = delete;
+	};
 }
 

@@ -155,7 +155,6 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="Task.h" />
     <ClInclude Include="ThreadPool.h" />
-    <ClInclude Include="threadpoolsexample.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />

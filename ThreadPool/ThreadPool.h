@@ -25,13 +25,15 @@ namespace CustomThreading
 	class ApplicationThreadPool
 	{
 	public:
-		static ApplicationThreadPool* GetInstance() {
-			static ApplicationThreadPool* instance = new ApplicationThreadPool();
+		static ApplicationThreadPool& GetInstance() {
+			static ApplicationThreadPool instance;
 			return instance;
 		}
 		bool QuqueTask(std::shared_ptr<Task>& task) {
 			return m_ThreadPool->QuqueTask(task);
 		}
+		ApplicationThreadPool(const ApplicationThreadPool&) = delete;
+		ApplicationThreadPool& operator=(const ApplicationThreadPool&) = delete;
 	private:
 		ApplicationThreadPool() : m_ThreadPool(nullptr) { m_ThreadPool = new ThreadPool(); };
 		~ApplicationThreadPool() {
@@ -41,8 +43,6 @@ namespace CustomThreading
 			}
 		}
 		ThreadPool* m_ThreadPool;
-		ApplicationThreadPool(const ApplicationThreadPool&) = delete;
-		ApplicationThreadPool& operator=(const ApplicationThreadPool&) = delete;
 	};
 }
 

@@ -24,10 +24,12 @@ namespace CustomThreading
 		{
 			LambdaWithParams = std::packaged_task<ReturnType()>(std::forward<LambdaFunc>(func));
 		}
-		/*template<class LambdaFunc, class ReturnType = std::result_of_t<LambdaFunc& ()>>
+		template<class LambdaFunc, class ReturnType = std::result_of_t<LambdaFunc& ()>>
 		static std::shared_ptr<Task> Run(LambdaFunc&& func) {
-			return std::make_shared<Task>(func);
-		}*/
+			auto task = std::make_shared<Task>(func);
+			//ApplicationThreadPool::GetInstance().QuqueTask(task);
+			return task;
+		}
 		~Task();
 		Task(Task& copyFrom); // copy constructor
 		Task(Task&& moveFrom); // move constructor

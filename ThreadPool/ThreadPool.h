@@ -11,14 +11,14 @@ namespace CustomThreading
 		ThreadPool(ThreadPool& copyFrom); // copy constructor
 		ThreadPool(ThreadPool&& moveFrom); // move constructor
 		~ThreadPool();
-		bool QuqueTask(Task* task);
+		bool QuqueTask(std::shared_ptr<Task>& task);
 	private:
 		unsigned int numberOfThreads;
 		std::vector<std::thread> threads;
 		std::mutex m_mutex;
 		std::condition_variable cond_var;
 		bool forceStop;
-		std::deque<Task*> workItems;
+		std::deque<std::shared_ptr<Task>> workItems;
 		void ThreadLoop();
 	};
 }

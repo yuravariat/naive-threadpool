@@ -30,7 +30,7 @@ CustomThreading::ThreadPool::~ThreadPool()
 {
 }
 
-bool CustomThreading::ThreadPool::QuqueTask(Task* task)
+bool CustomThreading::ThreadPool::QuqueTask(std::shared_ptr<Task>& task)
 {
     bool success = true;
     try {
@@ -53,7 +53,7 @@ void CustomThreading::ThreadPool::ThreadLoop()
 	while (!this->forceStop)
 	{
         // try inqueue
-        CustomThreading::Task* task;
+        std::shared_ptr<Task> task;
         {
             // if empty, lock
             std::unique_lock<std::mutex> lock(m_mutex);

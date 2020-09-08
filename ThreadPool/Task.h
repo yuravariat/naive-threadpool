@@ -2,6 +2,8 @@
 #include "pch.h"
 namespace CustomThreading
 {
+	template <typename T>
+	class TTask;
 	class Task;
 	class ApplicationThreadPool;
 }
@@ -23,29 +25,48 @@ namespace CustomThreading
 	class Task
 	{
 	public:
-		Task();
+		Task() : m_Status(TaskStatus::Created) {}
+		~Task() {}
+		Task(Task& copyFrom) : m_Status(copyFrom.m_Status){} // copy constructor
+		Task(Task&& moveFrom) : m_Status(moveFrom.m_Status) {} // move constructor
 		template<class LambdaFunc, class ReturnType = std::result_of_t<LambdaFunc& ()>>
-		Task(LambdaFunc&& func) 
-			:m_Status(TaskStatus::Created)
-		{
-			LambdaWithParams = std::packaged_task<ReturnType()>(std::forward<LambdaFunc>(func));
+		static std::shared_ptr<TTask<ReturnType>> Run(LambdaFunc&& func) {
+			return ApplicationThreadPool::GetInstance().QuqueTask(func);
 		}
-		template<class LambdaFunc, class ReturnType = std::result_of_t<LambdaFunc& ()>>
-		static std::shared_ptr<Task> Run(LambdaFunc&& func) {
-			auto task = std::make_shared<Task>(func);
-			ApplicationThreadPool::GetInstance().QuqueTask(task);
-			return task;
-		}
-		~Task();
-		Task(Task& copyFrom); // copy constructor
-		Task(Task&& moveFrom); // move constructor
-
 		TaskStatus GetStatus() { return m_Status; }
 
-	private:
+	protected:
 		TaskStatus m_Status;
-		std::packaged_task<void()> LambdaWithParams;
+	private:
+		virtual bool InternalRun() { return true; }
+		friend class ThreadPool;
+	};
 
+	template <typename T>
+	class TTask : public Task {
+	public:
+		TTask() {}
+		template<class LambdaFunc>
+		TTask(LambdaFunc&& func)
+		{
+			LambdaWithParams = std::packaged_task<T()>(std::forward<LambdaFunc>(func));
+		}
+		~TTask() {}
+		T Result;
+	protected:
+		std::packaged_task<T()> LambdaWithParams;
+	private:
+		bool InternalRun() override
+		{
+			// if the task is invalid, it means we are asked to abort:
+			if (!LambdaWithParams.valid()) return false;
+
+			// otherwise, run the task:
+			auto result = LambdaWithParams.get_future();
+			LambdaWithParams();
+			Result = result.get();
+			return true;
+		}
 		friend class ThreadPool;
 	};
 }

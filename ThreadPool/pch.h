@@ -15,5 +15,6 @@
 #include <future>
 #include <thread>
 #include <atomic>
+#include <condition_variable>
 
 #endif //PCH_H

@@ -45,7 +45,7 @@ namespace CustomThreading
 		{
 			LambdaWithParams = std::packaged_task<void()>(std::forward<LambdaFunc>(func));
 		}
-		Task(Task& copyFrom) : m_Status(copyFrom.m_Status), _id(copyFrom._id), LambdaWithParams(&copyFrom.LambdaWithParams){} // copy constructor
+		Task(Task& copyFrom) = delete;  // copy constructor deleted
 		Task(Task&& moveFrom) noexcept : m_Status(moveFrom.m_Status), _id(moveFrom._id), LambdaWithParams(std::move(moveFrom.LambdaWithParams)) { } // move constructor
 		~Task() {}
 		#pragma endregion
@@ -95,6 +95,8 @@ namespace CustomThreading
 		{
 			LambdaWithParams = std::packaged_task<T()>(std::forward<LambdaFunc>(func));
 		}
+		TTask(TTask& copyFrom) = delete;  // copy constructor deleted
+		TTask(TTask&& moveFrom) noexcept : m_Status(moveFrom.m_Status), _id(moveFrom._id), LambdaWithParams(std::move(moveFrom.LambdaWithParams)) { } // move constructor
 		~TTask() {}
 		T Result;
 	protected:

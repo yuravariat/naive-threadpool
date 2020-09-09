@@ -51,11 +51,18 @@ void CustomThreading::ThreadPool::ThreadLoop()
         }
         task->m_Status = TaskStatus::Running;
 
-        if (task.get()->InternalRun()) {
-            task->m_Status = TaskStatus::RanToCompletion;
+        try {
+            if (task.get()->InternalRun()) {
+                task->m_Status = TaskStatus::RanToCompletion;
+            }
+            else {
+                task->m_Status = TaskStatus::Faulted;
+            }
         }
-        else {
+        catch (...) {
+            // todo: add error class to the task to store it.
             task->m_Status = TaskStatus::Faulted;
         }
+        task->PostRun();
 	}
 }

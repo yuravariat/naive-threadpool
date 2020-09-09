@@ -8,6 +8,7 @@ namespace CustomThreading
 	class ApplicationThreadPool;
 }
 #include "ThreadPool.h"
+#include "AutoResetEvent.h"
 
 namespace CustomThreading
 {
@@ -37,7 +38,7 @@ namespace CustomThreading
 	public:
 
 		#pragma region Constr
-		Task() : m_Status(TaskStatus::Created), _id(0) {
+		Task() : m_Status(TaskStatus::Created), _id(0), _runCompilteEvent(nullptr) {
 			_id = _idCounter.fetch_add(1);
 		}
 		template<class LambdaFunc>
@@ -46,8 +47,14 @@ namespace CustomThreading
 			LambdaWithParams = std::packaged_task<void()>(std::forward<LambdaFunc>(func));
 		}
 		Task(Task& copyFrom) = delete;  // copy constructor deleted
-		Task(Task&& moveFrom) noexcept : m_Status(moveFrom.m_Status), _id(moveFrom._id), LambdaWithParams(std::move(moveFrom.LambdaWithParams)) { } // move constructor
-		~Task() {}
+		Task(Task&& moveFrom) noexcept : 
+			m_Status(moveFrom.m_Status), _id(moveFrom._id), LambdaWithParams(std::move(moveFrom.LambdaWithParams)) { } // move constructor
+		~Task() {
+			if (_runCompilteEvent != nullptr) {
+				delete _runCompilteEvent;
+				_runCompilteEvent = nullptr;
+			}
+		}
 		#pragma endregion
 
 		template<class LambdaFunc>
@@ -60,19 +67,58 @@ namespace CustomThreading
 			return ApplicationThreadPool::GetInstance().QuqueTask(func);
 		}
 
+		std::packaged_task<void()> LambdaWithParams;
+
 		TaskStatus GetStatus() { return m_Status; }
 		unsigned long GetID() { return _id; }
-		std::packaged_task<void()> LambdaWithParams;
+		void Wait() {
+
+			if (m_Status == TaskStatus::Created)
+				throw std::exception("call run before wait");
+
+			if ((short)this->m_Status > 4)
+				return;
+
+			// spin a little
+			int spins = std::thread::hardware_concurrency() == 1 ? 1 : 40;
+			for (int i = 0; i< spins; i++) {
+				if (i % 5 == 0)
+					std::this_thread::sleep_for(std::chrono::milliseconds(0));
+				else if (i % 10 == 0)
+					std::this_thread::yield();
+				else if (i % 20)
+					std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				else
+					_mm_pause();
+
+				if ((short)this->m_Status > 4)
+					return;
+			}
+			// now the OS lock
+			// todo: while preparing the lock task may already be finished and PostRun already ran, causes deadlock.
+			if (_runCompilteEvent == nullptr) {
+				_runCompilteEvent = new AutoResetEvent();
+			}
+			_runCompilteEvent->WaitOne();
+		}
 
 	protected:
 		TaskStatus m_Status;
 		unsigned long _id;
 
 	private:
-		virtual bool InternalRun() { 
-			if (!LambdaWithParams.valid()) return false;
+		AutoResetEvent* _runCompilteEvent;
+		virtual bool InternalRun() {
+
+			if (!LambdaWithParams.valid()) 
+				return false;
+
 			LambdaWithParams();
 			return true;
+		}
+		void PostRun() {
+			if (_runCompilteEvent != nullptr)
+				_runCompilteEvent->Set();
 		}
 		static std::atomic<unsigned long> _idCounter;
 		static class _init { public: _init() { _idCounter = 1; }} _initializer;
@@ -96,8 +142,10 @@ namespace CustomThreading
 			LambdaWithParams = std::packaged_task<T()>(std::forward<LambdaFunc>(func));
 		}
 		TTask(TTask& copyFrom) = delete;  // copy constructor deleted
-		TTask(TTask&& moveFrom) noexcept : m_Status(moveFrom.m_Status), _id(moveFrom._id), LambdaWithParams(std::move(moveFrom.LambdaWithParams)) { } // move constructor
+		TTask(TTask&& moveFrom) noexcept 
+			: m_Status(moveFrom.m_Status), _id(moveFrom._id), LambdaWithParams(std::move(moveFrom.LambdaWithParams)) { } // move constructor
 		~TTask() {}
+		// todo: make it private and expose GetResult method that will include also Wait()
 		T Result;
 	protected:
 		std::packaged_task<T()> LambdaWithParams;

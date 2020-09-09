@@ -6,6 +6,11 @@ class TaskStatus;
 
 namespace CustomThreading
 {
+	/// <summary>
+	/// Thread pool class
+	/// </summary>
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	class ThreadPool
 	{
 	public:
@@ -56,7 +61,10 @@ namespace CustomThreading
 	};
 
 
-
+	/// <summary>
+	/// Staic thread pool of the application
+	/// </summary>
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	class ApplicationThreadPool
 	{

@@ -11,6 +11,11 @@ namespace CustomThreading
 
 namespace CustomThreading
 {
+	/// <summary>
+	/// Task life-time cycle statuses
+	/// </summary>
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	enum class TaskStatus : short {
 		Created = 0,
 		WaitingForActivation = 1,
@@ -22,20 +27,28 @@ namespace CustomThreading
 		Faulted = 7
 	};
 
-
+	/// <summary>
+	/// Base void task
+	/// </summary>
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	class Task
 	{
 	public:
-		Task() : m_Status(TaskStatus::Created) {}
-		~Task() {}
+
+		#pragma region Constr
+		Task() : m_Status(TaskStatus::Created), _id(0) {
+			_id = _idCounter.fetch_add(1);
+		}
 		template<class LambdaFunc>
-		Task(LambdaFunc&& func)
+		Task(LambdaFunc&& func) : Task()
 		{
 			LambdaWithParams = std::packaged_task<void()>(std::forward<LambdaFunc>(func));
 		}
-		Task(Task& copyFrom) : m_Status(copyFrom.m_Status){} // copy constructor
-		Task(Task&& moveFrom) : m_Status(moveFrom.m_Status) {} // move constructor
+		Task(Task& copyFrom) : m_Status(copyFrom.m_Status), _id(copyFrom._id), LambdaWithParams(&copyFrom.LambdaWithParams){} // copy constructor
+		Task(Task&& moveFrom) noexcept : m_Status(moveFrom.m_Status), _id(moveFrom._id), LambdaWithParams(std::move(moveFrom.LambdaWithParams)) { } // move constructor
+		~Task() {}
+		#pragma endregion
 
 		template<class LambdaFunc>
 		static std::shared_ptr<Task> RunVoid(LambdaFunc&& func) {
@@ -48,9 +61,12 @@ namespace CustomThreading
 		}
 
 		TaskStatus GetStatus() { return m_Status; }
+		unsigned long GetID() { return _id; }
 		std::packaged_task<void()> LambdaWithParams;
+
 	protected:
 		TaskStatus m_Status;
+		unsigned long _id;
 
 	private:
 		virtual bool InternalRun() { 
@@ -58,10 +74,17 @@ namespace CustomThreading
 			LambdaWithParams();
 			return true;
 		}
+		static std::atomic<unsigned long> _idCounter;
+		static class _init { public: _init() { _idCounter = 1; }} _initializer;
+
 		friend class ThreadPool;
 	};
 
-
+	/// <summary>
+	/// Task with results
+	/// </summary>
+	/// <typeparam name="T">Return type of the task</typeparam>
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	template <typename T>
 	class TTask : public Task {
@@ -89,4 +112,3 @@ namespace CustomThreading
 		friend class ThreadPool;
 	};
 }
-

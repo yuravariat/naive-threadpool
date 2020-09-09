@@ -21,7 +21,7 @@ int main()
 		};
 		auto task = Task::RunVoid(func1);
 	}
-
+	num++;
 	auto func = [capt_num = num]() {
 		std::stringstream sm;
 		sm << "hello int task " << capt_num << " id " << std::this_thread::get_id() << std::endl;
@@ -29,6 +29,8 @@ int main()
 		return 1;
 	};
 	auto task1 = Task::Run(func);
+
+	num++;
 	auto task2 = Task::Run([capt_num = num]() {
 		std::stringstream sm;
 		sm << "hello string task " << capt_num << " id " << std::this_thread::get_id() << std::endl;
@@ -46,13 +48,13 @@ int main()
 	// task.Wait still not implemeted, so we are waiting.
 	std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 	if (task1->GetStatus() == CustomThreading::TaskStatus::RanToCompletion) {
-		std::cout << "task1 returned " << task1->Result << std::endl;
+		std::cout << task1->GetID() << " task1 returned " << task1->Result << std::endl;
 	}
 	if (task2->GetStatus() == CustomThreading::TaskStatus::RanToCompletion) {
-		std::cout << "task2 returned " << task2->Result << std::endl;
+		std::cout << task2->GetID() << " task2 returned " << task2->Result << std::endl;
 	}
 	if (task3->GetStatus() == CustomThreading::TaskStatus::RanToCompletion) {
-		std::cout << "task2 returned " << task3->Result << std::endl;
+		std::cout << task3->GetID() << " task2 returned " << task3->Result << std::endl;
 	}
 }
 

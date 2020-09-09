@@ -14,5 +14,6 @@
 #include <vector>
 #include <future>
 #include <thread>
+#include <atomic>
 
 #endif //PCH_H

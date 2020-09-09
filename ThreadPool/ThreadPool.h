@@ -13,6 +13,22 @@ namespace CustomThreading
 		ThreadPool(ThreadPool& copyFrom); // copy constructor
 		ThreadPool(ThreadPool&& moveFrom); // move constructor
 		~ThreadPool();
+		template<class LambdaFunc>
+		std::shared_ptr<Task> QuqueTaskVoid(LambdaFunc&& func)
+		{
+			std::shared_ptr<Task> task = std::make_shared<Task>(func);
+			try {
+				std::unique_lock<std::mutex> lock(m_mutex);
+				task->m_Status = TaskStatus::WaitingToRun;
+				workItems.emplace_back(task);
+				return task;
+			}
+			catch (std::exception ex) {
+			}
+			catch (...) {
+			}
+			return nullptr;
+		}
 		template<class LambdaFunc, class ReturnType = std::result_of_t<LambdaFunc& ()>>
 		std::shared_ptr<TTask<ReturnType>> QuqueTask(LambdaFunc&& func)
 		{
@@ -21,15 +37,13 @@ namespace CustomThreading
 				std::unique_lock<std::mutex> lock(m_mutex);
 				task->m_Status = TaskStatus::WaitingToRun;
 				workItems.emplace_back(task);
+				return task;
 			}
 			catch (std::exception ex) {
-				task = nullptr;
 			}
 			catch (...) {
-				task = nullptr;
 			}
-
-			return task;
+			return nullptr;
 		}
 	private:
 		unsigned int numberOfThreads;
@@ -41,6 +55,9 @@ namespace CustomThreading
 		void ThreadLoop();
 	};
 
+
+
+
 	class ApplicationThreadPool
 	{
 	public:
@@ -48,6 +65,11 @@ namespace CustomThreading
 			static ApplicationThreadPool instance;
 			return instance;
 		}
+		template<class LambdaFunc>
+		std::shared_ptr<Task> QuqueTaskVoid(LambdaFunc&& func) {
+			return m_ThreadPool->QuqueTaskVoid(func);
+		}
+
 		template<class LambdaFunc, class ReturnType = std::result_of_t<LambdaFunc& ()>>
 		std::shared_ptr<TTask<ReturnType>> QuqueTask(LambdaFunc&& func) {
 			return m_ThreadPool->QuqueTask(func);

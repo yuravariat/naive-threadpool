@@ -22,25 +22,46 @@ namespace CustomThreading
 		Faulted = 7
 	};
 
+
+
 	class Task
 	{
 	public:
 		Task() : m_Status(TaskStatus::Created) {}
 		~Task() {}
+		template<class LambdaFunc>
+		Task(LambdaFunc&& func)
+		{
+			LambdaWithParams = std::packaged_task<void()>(std::forward<LambdaFunc>(func));
+		}
 		Task(Task& copyFrom) : m_Status(copyFrom.m_Status){} // copy constructor
 		Task(Task&& moveFrom) : m_Status(moveFrom.m_Status) {} // move constructor
-		template<class LambdaFunc, class ReturnType = std::result_of_t<LambdaFunc& ()>>
+
+		template<class LambdaFunc>
+		static std::shared_ptr<Task> RunVoid(LambdaFunc&& func) {
+			return ApplicationThreadPool::GetInstance().QuqueTaskVoid(func);
+		}
+
+		template<class LambdaFunc, class ReturnType = std::result_of_t<LambdaFunc&()>>
 		static std::shared_ptr<TTask<ReturnType>> Run(LambdaFunc&& func) {
 			return ApplicationThreadPool::GetInstance().QuqueTask(func);
 		}
-		TaskStatus GetStatus() { return m_Status; }
 
+		TaskStatus GetStatus() { return m_Status; }
+		std::packaged_task<void()> LambdaWithParams;
 	protected:
 		TaskStatus m_Status;
+
 	private:
-		virtual bool InternalRun() { return true; }
+		virtual bool InternalRun() { 
+			if (!LambdaWithParams.valid()) return false;
+			LambdaWithParams();
+			return true;
+		}
 		friend class ThreadPool;
 	};
+
+
 
 	template <typename T>
 	class TTask : public Task {
@@ -58,10 +79,8 @@ namespace CustomThreading
 	private:
 		bool InternalRun() override
 		{
-			// if the task is invalid, it means we are asked to abort:
 			if (!LambdaWithParams.valid()) return false;
 
-			// otherwise, run the task:
 			auto result = LambdaWithParams.get_future();
 			LambdaWithParams();
 			Result = result.get();

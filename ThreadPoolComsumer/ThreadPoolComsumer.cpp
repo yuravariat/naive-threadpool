@@ -5,6 +5,8 @@
 
 using namespace CustomThreading;
 
+double someMethod();
+
 int main()
 {
 	ThreadPool pool;
@@ -12,13 +14,12 @@ int main()
 	int num = 1;
 
 	{
-		auto func = [capt_num = num]() {
+		auto func1 = [capt_num = num]() {
 			std::stringstream sm;
-			sm << "hello int task " << capt_num << " id " << std::this_thread::get_id() << " get out of scope" << std::endl;
+			sm << "hello int void " << capt_num << " id " << std::this_thread::get_id() << " get out of scope" << std::endl;
 			std::cout << sm.str();
-			return 1;
 		};
-		auto task = Task::Run(func);
+		auto task = Task::RunVoid(func1);
 	}
 
 	auto func = [capt_num = num]() {
@@ -35,6 +36,8 @@ int main()
 		return std::string("I am string");
 		});
 
+	auto task3 = Task::Run(someMethod);
+
 	std::stringstream sm1;
 	sm1 << "Hello World! main thread " << std::this_thread::get_id() << std::endl;
 	std::cout << sm1.str();
@@ -48,4 +51,15 @@ int main()
 	if (task2->GetStatus() == CustomThreading::TaskStatus::RanToCompletion) {
 		std::cout << "task2 returned " << task2->Result << std::endl;
 	}
+	if (task3->GetStatus() == CustomThreading::TaskStatus::RanToCompletion) {
+		std::cout << "task2 returned " << task3->Result << std::endl;
+	}
+}
+
+
+double someMethod() {
+	std::stringstream sm;
+	sm << "hello double task " << " id " << std::this_thread::get_id() << std::endl;
+	std::cout << sm.str();
+	return 1.5;
 }

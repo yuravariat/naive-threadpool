@@ -95,10 +95,14 @@ namespace CustomThreading
 					return;
 			}
 			// now the OS lock
-			// todo: while preparing the lock task may already be finished and PostRun already ran, causes deadlock.
 			if (_runCompilteEvent == nullptr) {
 				_runCompilteEvent = new AutoResetEvent();
 			}
+			// check again, while preparing the AutoResetEvent, InternalRun and PostRun maybe already finished.
+			if ((short)this->m_Status > 4)
+				return;
+
+			// now wait
 			_runCompilteEvent->WaitOne();
 		}
 

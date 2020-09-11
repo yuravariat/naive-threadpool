@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "ThreadPool.h"
 
-CustomThreading::ThreadPool::ThreadPool(unsigned int numOfThreads)
+CustomThreading::ApplicationThreadPool::ThreadPool::ThreadPool(unsigned int numOfThreads)
 	:numberOfThreads(numOfThreads),
     forceStop(false)
 {
@@ -12,21 +12,21 @@ CustomThreading::ThreadPool::ThreadPool(unsigned int numOfThreads)
         }));
     }
 }
-CustomThreading::ThreadPool::ThreadPool(ThreadPool& copyFrom)
+CustomThreading::ApplicationThreadPool::ThreadPool::ThreadPool(ThreadPool& copyFrom)
     : forceStop(copyFrom.forceStop), 
     numberOfThreads(copyFrom.numberOfThreads)
 {
    /* threads = copyFrom.threads;
     workItems = copyFrom.workItems;*/
 }
-CustomThreading::ThreadPool::ThreadPool(ThreadPool&& moveFrom)
+CustomThreading::ApplicationThreadPool::ThreadPool::ThreadPool(ThreadPool&& moveFrom)
     : forceStop(moveFrom.forceStop), 
     numberOfThreads(moveFrom.numberOfThreads),
     threads(std::move(moveFrom.threads)),
     workItems(std::move(moveFrom.workItems))
 {
 }
-CustomThreading::ThreadPool::~ThreadPool()
+CustomThreading::ApplicationThreadPool::ThreadPool::~ThreadPool()
 {
     for (unsigned int i = 0; i < numberOfThreads; i++) {
         threads[i].detach();
@@ -34,7 +34,7 @@ CustomThreading::ThreadPool::~ThreadPool()
     threads.clear();
 }
 
-void CustomThreading::ThreadPool::ThreadLoop()
+void CustomThreading::ApplicationThreadPool::ThreadPool::ThreadLoop()
 {
 	while (!this->forceStop)
 	{
@@ -57,11 +57,20 @@ void CustomThreading::ThreadPool::ThreadLoop()
             }
             else {
                 task->m_Status = TaskStatus::Faulted;
+                task->exception = std::exception("task function not valid");
             }
         }
-        catch (...) {
-            // todo: add error class to the task to store it.
+        catch (const std::exception& ex) {
             task->m_Status = TaskStatus::Faulted;
+            task->exception = ex;
+        }
+        catch (const std::string& ex) {
+            task->m_Status = TaskStatus::Faulted;
+            task->exception = std::exception(ex.c_str());
+        }
+        catch (...) {
+            task->m_Status = TaskStatus::Faulted;
+            task->exception = std::exception("unknown exception");
         }
         task->PostRun();
 	}

@@ -16,5 +16,6 @@
 #include <thread>
 #include <atomic>
 #include <condition_variable>
+#include <exception>
 
 #endif //PCH_H

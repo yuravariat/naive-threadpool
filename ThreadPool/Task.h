@@ -68,6 +68,7 @@ namespace CustomThreading
 		}
 
 		std::packaged_task<void()> LambdaWithParams;
+		std::exception exception;
 
 		TaskStatus GetStatus() { return m_Status; }
 		unsigned long GetID() { return _id; }
@@ -105,6 +106,14 @@ namespace CustomThreading
 			// now wait
 			_runCompilteEvent->WaitOne();
 		}
+		template <typename... Tasks>
+		static void WaitAll(Tasks... tasks) {
+			std::shared_ptr<Task> tasks_to_wait[] = { static_cast<std::shared_ptr<Task>>(tasks)... };
+			unsigned int items = sizeof...(tasks);
+			for (unsigned int i = 0; i < items; i++) {
+				tasks_to_wait[i]->Wait();
+			}
+		}
 
 	protected:
 		TaskStatus m_Status;
@@ -128,6 +137,7 @@ namespace CustomThreading
 		static class _init { public: _init() { _idCounter = 1; }} _initializer;
 
 		friend class ThreadPool;
+		friend class ApplicationThreadPool;
 	};
 
 	/// <summary>

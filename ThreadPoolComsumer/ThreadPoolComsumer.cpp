@@ -62,9 +62,9 @@ void example() {
 
 	task3->Wait();
 
-	std::cout << "task1 with id " << task1->GetID() << " returned " << task1->Result << std::endl;
-	std::cout << "task2 with id " << task2->GetID() << " returned " << task2->Result << std::endl;
-	std::cout << "task3 with id " << task3->GetID() << " returned " << task3->Result << std::endl;
+	std::cout << "task1 with id " << task1->GetID() << " returned " << task1->GetResult() << std::endl;
+	std::cout << "task2 with id " << task2->GetID() << " returned " << task2->GetResult() << std::endl;
+	std::cout << "task3 with id " << task3->GetID() << " returned " << task3->GetResult() << std::endl;
 }
 
 void withErrorsExample() {
@@ -86,20 +86,27 @@ void withErrorsExample() {
 		return 1;
 		});
 
-	Task::WaitAll(task1, task2);
+	try
+	{
+		Task::WaitAll(task1, task2);
 
-	if (task1->GetStatus() == CustomThreading::TaskStatus::Faulted) {
-		std::cout << "task1 thorwn \"" << task1->exception.what() << "\"" << std::endl;
-	}
-	else {
-		std::cout << "task1 with id " << task1->GetID() << " returned " << task1->Result << std::endl;
-	}
+		if (task1->HasExecption()) {
+			std::cout << "task1 thorwn \"" << task1->GetException().what() << "\"" << std::endl;
+		}
+		else {
+			std::cout << "task1 with id " << task1->GetID() << " returned " << task1->GetResult() << std::endl;
+		}
 
-	if (task2->GetStatus() == CustomThreading::TaskStatus::Faulted) {
-		std::cout << "task2 thorwn \"" << task2->exception.what() << "\"" << std::endl;
+		if (task2->HasExecption()) {
+			std::cout << "task2 thorwn \"" << task2->GetException().what() << "\"" << std::endl;
+		}
+		else {
+			std::cout << "task2 with id " << task2->GetID() << " returned " << task2->GetResult() << std::endl;
+		}
+
 	}
-	else {
-		std::cout << "task2 with id " << task2->GetID() << " returned " << task2->Result << std::endl;
+	catch (std::exception& ex) {
+		std::cout << "error while waiting for results " << ex.what() << std::endl;
 	}
 }
 

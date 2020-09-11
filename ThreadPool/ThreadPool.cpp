@@ -57,20 +57,12 @@ void CustomThreading::ApplicationThreadPool::ThreadPool::ThreadLoop()
             }
             else {
                 task->m_Status = TaskStatus::Faulted;
-                task->exception = std::exception("task function not valid");
+                throw std::exception("task function not valid");
             }
-        }
-        catch (const std::exception& ex) {
-            task->m_Status = TaskStatus::Faulted;
-            task->exception = ex;
-        }
-        catch (const std::string& ex) {
-            task->m_Status = TaskStatus::Faulted;
-            task->exception = std::exception(ex.c_str());
         }
         catch (...) {
             task->m_Status = TaskStatus::Faulted;
-            task->exception = std::exception("unknown exception");
+            task->exception_ptr = std::current_exception();
         }
         try {
             task->PostRun();

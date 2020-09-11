@@ -68,16 +68,33 @@ namespace CustomThreading
 		}
 
 		std::packaged_task<void()> LambdaWithParams;
-		std::exception exception;
 
 		TaskStatus GetStatus() { return m_Status; }
 		unsigned long GetID() { return _id; }
+		inline bool IsFinished() { return (short)this->m_Status > 4; }
+		inline bool HasExecption() { return this->m_Status == TaskStatus::Faulted; }
+		std::exception GetException() {
+			try {
+				std::rethrow_exception(exception_ptr);
+			}
+			catch (std::exception& ex) {
+				return ex;
+			}
+			catch (std::string& ex) {
+				return std::exception(ex.c_str());
+			}
+			catch (...) {
+				return std::exception("unknown error occurred");
+			}
+			std::exception ex;
+			return ex;
+		}
 		void Wait() {
 
 			if (m_Status == TaskStatus::Created)
 				throw std::exception("call run before wait");
 
-			if ((short)this->m_Status > 4)
+			if (IsFinished())
 				return;
 
 			// spin a little
@@ -92,7 +109,7 @@ namespace CustomThreading
 				else
 					_mm_pause();
 
-				if ((short)this->m_Status > 4)
+				if (IsFinished())
 					return;
 			}
 			// now the OS lock
@@ -100,7 +117,7 @@ namespace CustomThreading
 				_runCompilteEvent = new AutoResetEvent();
 			}
 			// check again, while preparing the AutoResetEvent, InternalRun and PostRun maybe already finished.
-			if ((short)this->m_Status > 4)
+			if (IsFinished())
 				return;
 
 			// now wait
@@ -117,6 +134,7 @@ namespace CustomThreading
 
 	protected:
 		TaskStatus m_Status;
+		std::exception_ptr exception_ptr;
 		unsigned long _id;
 
 	private:
@@ -159,11 +177,23 @@ namespace CustomThreading
 		TTask(TTask&& moveFrom) noexcept 
 			: m_Status(moveFrom.m_Status), _id(moveFrom._id), LambdaWithParams(std::move(moveFrom.LambdaWithParams)) { } // move constructor
 		~TTask() {}
-		// todo: make it private and expose GetResult method that will include also Wait()
-		T Result;
+		T GetResult() {
+			if (!IsFinished()) {
+				Wait();
+			}
+			if (m_Status == CustomThreading::TaskStatus::Faulted) {
+				if (exception_ptr != nullptr)
+					std::rethrow_exception(exception_ptr);
+				else
+					throw std::exception("Task execution thrown execption");
+			}
+
+			return Result;
+		}
 	protected:
 		std::packaged_task<T()> LambdaWithParams;
 	private:
+		T Result;
 		bool InternalRun() override
 		{
 			if (!LambdaWithParams.valid()) return false;

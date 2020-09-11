@@ -72,6 +72,9 @@ void CustomThreading::ApplicationThreadPool::ThreadPool::ThreadLoop()
             task->m_Status = TaskStatus::Faulted;
             task->exception = std::exception("unknown exception");
         }
-        task->PostRun();
+        try {
+            task->PostRun();
+        }
+        catch (...) {}
 	}
 }

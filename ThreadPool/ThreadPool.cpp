@@ -28,6 +28,7 @@ CustomThreading::ApplicationThreadPool::ThreadPool::ThreadPool(ThreadPool&& move
 }
 CustomThreading::ApplicationThreadPool::ThreadPool::~ThreadPool()
 {
+    forceStop = true;
     for (unsigned int i = 0; i < numberOfThreads; i++) {
         threads[i].detach();
     }
@@ -44,7 +45,10 @@ void CustomThreading::ApplicationThreadPool::ThreadPool::ThreadLoop()
             // if empty, lock
             std::unique_lock<std::mutex> lock(m_mutex);
             if (workItems.empty()) {
-                cond_var.wait(lock, [&] {return !workItems.empty(); });
+                cond_var.wait(lock, [&] {return !workItems.empty() || this->forceStop; });
+            }
+            if (this->forceStop) {
+                break;
             }
             task = workItems.front();
             workItems.pop_front();
